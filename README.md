@@ -34,7 +34,11 @@ A 3D scanner is used to digitise the fracture surface after material separation 
 The contours are projected onto the plane using cutting planes and then piecewise linearly approximated. As part of the analysis, relevant parameters such as the angle of inclination at the respective position of the cutting plane are taken into account. One can also characterize the resulting crack path. The procedure described not only enables the digitisation of a complex geometric structure, but also allows the assignment of three-dimensional parameters such as the fracture mode to the crack-describing variables.
 
 
-<script src="https://embed.github.com/view/3d/scho-vn/fracture_surface_evaluation_tool/blob/master/01_raw_stl/test_mesh.stl"></script>
+| ![fracture_surface_ev_tool](./Example_Images/3d_scan.png) |
+|:--:|
+| **_Visualisation of the digitalized fractured surface _** |
+
+[./Example_Images/test_mesh.pdf](.../Example_Images/test_mesh.pdf)
 
 
 References:
