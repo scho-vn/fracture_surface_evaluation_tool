@@ -25,7 +25,7 @@ pip install -r requirements.txt
 ```
 
 The repository contains the following folders:
-* `01_raw_stl`: Containing a .stl file from a 3D scan
+* `01_raw_stl`: Containing an example of a .stl file from a 3D scan
 * `02_results`: Results obtained from the given examples. This includes examples of the sliced and linearly approximated contours as well as the postprocessing to characterize the contour with regards to the occurence of shear lips and the fracture mode. 
 * `fracture_surface_utils`: Neccesary functions to read and process data inputs
 
@@ -36,7 +36,9 @@ The contours are projected onto the plane using cutting planes and then piecewis
 
 | ![fracture_surface_ev_tool](./Example_Images/3d_scan.png) |
 |:--:|
-| **_Visualisation of the digitalized fractured surface _** |
+| **_Visualisation of the digitalized fractured surface_** |
+
+A 3D PDF of the .stl file can be found here (Needs Adobe  Reader): 
 
 [./Example_Images/test_mesh.pdf](.../Example_Images/test_mesh.pdf)
 
