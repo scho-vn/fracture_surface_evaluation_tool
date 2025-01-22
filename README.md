@@ -3,7 +3,7 @@
 The fracture surface evaluation tool is utilised for the analysis and description of a fractured surface given by a 3D-Scan.  
 
 This repository contains the code used to generate the results of the research article
-[![DOI](https://zenodo.org/badge/DOI/10.1016/j.engfracmech.2024.110664.svg      )](https://doi.org/10.1016/j.engfracmech.2024.110664      )
+[![DOI](https://zenodo.org/badge/DOI/10.1016/j.engfracmech.2024.110664.svg       )](https://doi.org/10.1016/j.engfracmech.2024.110664       )
 
 ```
 Vanessa Schöne, Florian Paysan and Eric Breitbarth. (2024)
@@ -40,10 +40,38 @@ A 3D PDF of the .stl file can be found here (Needs Adobe Reader):
 [./Example_Images/test_mesh.pdf](.../Example_Images/test_mesh.pdf)
 
 ## How does it work?
-Given a .stl file of the contour as input, one can set a slicing plane along the x-y-axis for a given z-coordinate (Equals the crack path) or along the y-z-axis for a given x coordinate (equals a through-thickness slice). As seen above, the scanned contour is projected towards the slicing plane. This allows us to get the crack path and crack deflection angle &#966;_0 
+Given a .stl file of the contour as input, one can set a slicing plane along the x-y-plane for a given z-coordinate (Equals the crack path) or along the y-z-plane for a given x coordinate (equals a through-thickness slice). As seen above, the scanned contour is projected towards the slicing plane. This allows us to get the crack path and crack deflection angle &#966;_0. 
+The sectional plane y-z generates the scanned contour, which is first masked in the respective outer area and the centre section is then linearly interpolated. In a second step, the centre section is linearly approximated with a piecewise linear fit. Shear lips [**2**] can be identified by differentiating between cases, taking into account the length and angle of the segments, among other things. The fracture surface characteristics are classified via a further case differentiation. 
 
+## What is the output?
+See `02_results` for given data in  `01_raw_stl`:
+
+For the y-z plane:
+* Visualization of the contour itself, segment position and contours of each fitted segment
+* Visualization of the masked and processed contour, correlation coefficient of linear approximation, occurence of shear lips and resulting mode classification
+* .txt file containing the set evaluation parameters
+* .csv file containing geometric description of the segments and mode classification
+
+For the x-y plane:
+* Visualization of the contour itself and crack kinking angle
+* .csv file containing the raw contour at given z coordinate
+* .csv file containing the masked contour within set limits and crack kinking angle
+
+ ## License and Limitations
+The package is developed **for research only and must not be used for any production or specification purposes**. 
+The Package is **under current development and all functionalities are on a prototype level**. 
+Feel free to use the code, however, **we do not guarantee in any form for its flawless implementation and execution**.
+ 
+## Get in touch
+If you are interested in the code, or in our work in general, feel free to contact me 
+via email at [vanessa.schoene@dlr.de](mailto:vanessa.schoene@dlr.de) or [vanessa.schoene5@gmail.com](mailto:vanessa.schoene5@gmail.com)
+
+## Intellectual Property and Authorship 
+This package is property of the German Aerospace Center (Deutsches Zentrum für Luft- und Raumfahrt e.V. - DLR) 
+and was developed in the Institute of Materials Research. Feel free to check out our [LinkedIn channel](https://www.linkedin.com/company/dlr-wf).
 
 References:
 
 1. **Zeiss** Industrial 3D Scanning. [https://www.zeiss.com/metrology/en/systems/optical-3d/3d-scanning.html](https://www.zeiss.com/metrology/en/systems/optical-3d/3d-scanning.html)
-2. 
+2. **Zuidema J. et al. (2004)** Shear lips on fatigue fracture surfaces of aluminum alloys. 
+   _FFEMS Volume28, Issue1-2_ [https://doi.org/10.1111/j.1460-2695.2004.00837.x ](https://doi.org/10.1111/j.1460-2695.2004.00837.x )
