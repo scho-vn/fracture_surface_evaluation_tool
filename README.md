@@ -3,15 +3,12 @@
 The fracture surface evaluation tool is utilised for the analysis and description of a fractured surface given by a 3D-Scan.  
 
 This repository contains the code used to generate the results of the research article
-[![DOI](https://zenodo.org/badge/DOI/10.1016/j.engfracmech.2024.110664.svg )](https://doi.org/10.1016/j.engfracmech.2024.110664 )
+[![DOI](https://zenodo.org/badge/DOI/10.1016/j.engfracmech.2024.110664.svg   )](https://doi.org/10.1016/j.engfracmech.2024.110664   )
 
 ```
 Vanessa Schöne, Florian Paysan and Eric Breitbarth. (2024)
 The relationship between crack front twisting, plastic zone and da/dN-dK curve of fatigue cracks in AA2024-T3. 
 ```
-
-## Abstract
-*TODO*
 
 ## Dependencies
 *  <a href="https://www.python.org/downloads/release/python-310/" target="_blank">Python 3.10</a>
