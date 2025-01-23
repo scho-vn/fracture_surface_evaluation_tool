@@ -3,7 +3,7 @@
 The fracture surface evaluation tool is utilised for the analysis and description of a fractured surface given by a 3D-Scan.  
 
 This repository contains the code used to generate the results of the research article
-[![DOI](https://zenodo.org/badge/DOI/10.1016/j.engfracmech.2024.110664.svg        )](https://doi.org/10.1016/j.engfracmech.2024.110664        )
+[![DOI](https://zenodo.org/badge/DOI/10.1016/j.engfracmech.2024.110664.svg         )](https://doi.org/10.1016/j.engfracmech.2024.110664         )
 
 ```
 Vanessa Schöne, Florian Paysan and Eric Breitbarth. (2024)
@@ -40,8 +40,8 @@ A 3D PDF of the .stl file can be found here (Needs Adobe Reader):
 [./Example_Images/test_mesh.pdf](.../Example_Images/test_mesh.pdf)
 
 ## How does it work?
-Given a .stl file of the contour as input, one can set a slicing plane along the x-y-plane for a given z-coordinate (Equals the crack path) or along the y-z-plane for a given x coordinate (equals a through-thickness slice). As seen above, the scanned contour is projected towards the slicing plane. This allows us to get the crack path and crack deflection angle &#966;_0. 
-The sectional plane y-z generates the scanned contour, which is first masked in the respective outer area and the centre section is then linearly interpolated. In a second step, the centre section is linearly approximated with a piecewise linear fit. Shear lips [**2**] can be identified by differentiating between cases, taking into account the length and angle of the segments, among other things. The fracture surface characteristics are classified via a further case differentiation. 
+Given a .stl file of the contour as input, one can set a slicing plane along the x-y-plane for a given z-coordinate (Equals the crack path) or along the y-z-plane for a given x coordinate (equals a through-thickness slice). As seen above, the scanned contour is projected towards the slicing plane. This allows us to get the crack path and crack kink angle &#966;_0. 
+The sectional plane y-z generates the scanned contour, which is first masked in the respective outer area and the centre section is then linearly interpolated. In a second step, the centre section is linearly approximated with a piecewise linear fit. Shear lips [**2**] can be identified by differentiating between cases, taking into account the length and angle of the segments, among other things. The fracture surface characteristics are classified via a further case differentiation. This allows, for example, the analysis of the crack twist angle &#968;_0 along the crack lenght.  
 
 | ![fracture_surface_ev_tool](./Example_Images/Slicing_Planes.png) |
 |:--:|
@@ -79,4 +79,4 @@ References:
 
 1. **Zeiss** Industrial 3D Scanning. [https://www.zeiss.com/metrology/en/systems/optical-3d/3d-scanning.html](https://www.zeiss.com/metrology/en/systems/optical-3d/3d-scanning.html)
 2. **Zuidema J. et al. (2004)** Shear lips on fatigue fracture surfaces of aluminum alloys. 
-   _FFEMS Volume28, Issue1-2_ [https://doi.org/10.1111/j.1460-2695.2004.00837.x   ](https://doi.org/10.1111/j.1460-2695.2004.00837.x   )
+   _FFEMS Volume28, Issue1-2_ [https://doi.org/10.1111/j.1460-2695.2004.00837.x      ](https://doi.org/10.1111/j.1460-2695.2004.00837.x      )
