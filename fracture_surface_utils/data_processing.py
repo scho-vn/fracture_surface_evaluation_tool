@@ -2,21 +2,23 @@ import trimesh
 import numpy as np
 import pwlf
 import os
-
-from fontTools.cffLib.transforms import remove_unused_subroutines
 from scipy.interpolate import interp1d
 import math
-import pandas as pd
 from scipy.stats import linregress
-import warnings
-import seaborn as sns
-import matplotlib.pyplot as plt
+
 
 class Data_Processing:
-    def __init__(self, specimen_name: str = "not defined", side: str = None, data_path_input: str = None,
-                 filename: str = None, x_coordinate: float = 0, cutoff_z_perc: float = 0.1,
-                 cutoff_y_perc: float = 0.9, cutoff_y_abs : float = 2):
-
+    def __init__(
+        self,
+        specimen_name: str = "not defined",
+        side: str = None,
+        data_path_input: str = None,
+        filename: str = None,
+        x_coordinate: float = 0,
+        cutoff_z_perc: float = 0.1,
+        cutoff_y_perc: float = 0.9,
+        cutoff_y_abs: float = 2,
+    ):
         """
         Parameter for slicing the processed .stl file for a given x coordinate or coordinate range.
 
@@ -58,17 +60,19 @@ class Data_Processing:
 
         self.specimen_name = specimen_name
         self.side = side
-        if self.side == 'left':
+        if self.side == "left":
             self.flip = -1
         else:
             self.flip = 1
 
-        self.output_path = os.path.join(global_path, '02_results', self.specimen_name, self.side)
+        self.output_path = os.path.join(
+            global_path, "02_results", self.specimen_name, self.side
+        )
 
         if not os.path.exists(self.output_path):
             os.makedirs(self.output_path)
 
-        self.filename_stl = f'{specimen_name}_finemesh.stl'
+        self.filename_stl = f"{specimen_name}_finemesh.stl"
         self.x_coordinate = x_coordinate
 
         self.cutoff_y_perc = cutoff_y_perc
@@ -94,8 +98,7 @@ class Data_Processing:
         self.shearlips_results = None
         self.modi_results = None
 
-    def slicer_yz_plane(self, interpolation_value: float, reposition : bool = False):
-
+    def slicer_yz_plane(self, interpolation_value: float, reposition: bool = False):
         """
         Function for slicing the .stl file for a given x coordinate at the zy plane.
 
@@ -123,7 +126,9 @@ class Data_Processing:
 
         x_coordinate = self.x_coordinate
 
-        slice_mesh = self.mesh.section(plane_origin=[x_coordinate, 0, 0], plane_normal=[1, 0, 0])
+        slice_mesh = self.mesh.section(
+            plane_origin=[x_coordinate, 0, 0], plane_normal=[1, 0, 0]
+        )
         slice_2D, to_3D = slice_mesh.to_planar()
 
         vertices = np.asarray(slice_2D.vertices)
@@ -131,7 +136,6 @@ class Data_Processing:
         y_coordinates_raw = y_coordinates = vertices[:, 1]
         z_min, z_max = vertices[:, 0].min(), vertices[:, 0].max()
         y_max = vertices[:, 1].max()
-
 
         if reposition == True:
 
@@ -143,56 +147,73 @@ class Data_Processing:
             start = -1
             width = self.thickness
             end = start + width
-            col_z_norm = ((vertices[:, 0] - vertices[:, 0].min()) / (
-                        vertices[:, 0].max() - vertices[:, 0].min()) * width + start).tolist()
+            col_z_norm = (
+                (vertices[:, 0] - vertices[:, 0].min())
+                / (vertices[:, 0].max() - vertices[:, 0].min())
+                * width
+                + start
+            ).tolist()
 
             vertices = np.stack((col_z_norm, col_y), axis=-1)
 
             z_coordinates_raw = vertices[:, 0]
             y_coordinates_raw = vertices[:, 1]
 
+        # Mask data according to parameters defined in Data Processing
 
-
-
-
-        #Mask data according to parameters defined in Data Processing
-
-        z_lim_lower, z_lim_upper = (z_min - self.cutoff_z_perc * z_min,
-                                    z_max - self.cutoff_z_perc * z_max)
+        z_lim_lower, z_lim_upper = (
+            z_min - self.cutoff_z_perc * z_min,
+            z_max - self.cutoff_z_perc * z_max,
+        )
 
         if self.cutoff_y_abs is not None:
             y_lim = y_max - self.cutoff_y_abs
         else:
             y_lim = y_max - self.cutoff_y_perc * y_max
 
-        mask_z = np.all([z_coordinates >= z_lim_lower, z_coordinates <= z_lim_upper], axis=0)
+        mask_z = np.all(
+            [z_coordinates >= z_lim_lower, z_coordinates <= z_lim_upper], axis=0
+        )
         mask_y = np.all([y_coordinates > y_lim], axis=0)
 
         masked_vertices = vertices[mask_y & mask_z]
-        masked_y_coordinates, masked_z_coordinates = masked_vertices[:, 1], masked_vertices[:, 0]
+        masked_y_coordinates, masked_z_coordinates = (
+            masked_vertices[:, 1],
+            masked_vertices[:, 0],
+        )
 
         # linear interpolation of unregular data
 
-        self.z_int = np.linspace(masked_z_coordinates.min(), masked_z_coordinates.max(), num=interpolation_value,
-                                 endpoint=True)
+        self.z_int = np.linspace(
+            masked_z_coordinates.min(),
+            masked_z_coordinates.max(),
+            num=interpolation_value,
+            endpoint=True,
+        )
         interpolate = interp1d(masked_z_coordinates, masked_y_coordinates)
         self.y_int = interpolate(self.z_int)
 
         z_int = self.z_int
         y_int = self.y_int
 
-        x_slice_to_yz_plane[x_coordinate] = {'Z_Coordinates_Contour': z_int,
-                                             'Y_Coordinates_Contour': y_int,
-                                             'Z_Coordinates_Raw': z_coordinates_raw,
-                                             'Y_Coordinates_Raw': y_coordinates_raw}
+        x_slice_to_yz_plane[x_coordinate] = {
+            "Z_Coordinates_Contour": z_int,
+            "Y_Coordinates_Contour": y_int,
+            "Z_Coordinates_Raw": z_coordinates_raw,
+            "Y_Coordinates_Raw": y_coordinates_raw,
+        }
 
         self.sliced_results = x_slice_to_yz_plane
         return x_slice_to_yz_plane
 
-
-    def slicer_xy_plane(self, z_value : float = 0, side: str = None, limits_x: list = [10,70],
-                        interpolation_value: float = 30, normal_vector: list = None):
-
+    def slicer_xy_plane(
+        self,
+        z_value: float = 0,
+        side: str = None,
+        limits_x: list = [10, 70],
+        interpolation_value: float = 30,
+        normal_vector: list = None,
+    ):
         """Slicing along the xy plane to get the crack path.
 
         Parameters
@@ -221,77 +242,90 @@ class Data_Processing:
         self.z_coordinate_slice = z_value
         self.limits_x = limits_x[0], limits_x[1]
 
-        #normal vector depends on the sign of the z value
+        # normal vector depends on the sign of the z value
 
-        #value_to_oondition = {0: [0, 0, 1], -1: [0, -0.0105, 0.99], 1:[0, 0.0153, -0.99]}
+        # value_to_oondition = {0: [0, 0, 1], -1: [0, -0.0105, 0.99], 1:[0, 0.0153, -0.99]}
 
-        value_to_oondition = {0: [0, 0, 1], -1: [0, -0.0105, 0.99], 1:[0, 0.0153, -1]}
+        value_to_oondition = {0: [0, 0, 1], -1: [0, -0.0105, 0.99], 1: [0, 0.0153, -1]}
 
         if self.z_coordinate_slice == 0:
             self.normal_vector = value_to_oondition.get(self.z_coordinate_slice)
 
         else:
-            self.normal_vector = value_to_oondition.get(np.sign(self.z_coordinate_slice))
+            self.normal_vector = value_to_oondition.get(
+                np.sign(self.z_coordinate_slice)
+            )
 
-        #overriding normal vector
+        # overriding normal vector
         if np.any(normal_vector):
             self.normal_vector = normal_vector
 
-
-        slice_mesh_xy = self.mesh.section(plane_origin=[0, 0, self.z_coordinate_slice], plane_normal=self.normal_vector)
+        slice_mesh_xy = self.mesh.section(
+            plane_origin=[0, 0, self.z_coordinate_slice],
+            plane_normal=self.normal_vector,
+        )
         slice_2D, to_3D = slice_mesh_xy.to_planar()
 
         vertices = np.asarray(slice_2D.vertices)
         x_coordinates_raw = x_coordinates = vertices[:, 0]
         y_coordinates_raw = y_coordinates = vertices[:, 1]
 
-        #flip limits if testside == left
+        # flip limits if testside == left
         self.limits_x = sorted([self.flip * els for els in self.limits_x])
 
-
-
-
-        #mask according to x limits
-        mask_x = np.all([x_coordinates >= self.limits_x[0] , x_coordinates <= self.limits_x[1]], axis=0)
+        # mask according to x limits
+        mask_x = np.all(
+            [x_coordinates >= self.limits_x[0], x_coordinates <= self.limits_x[1]],
+            axis=0,
+        )
         masked_vertices = vertices[mask_x]
-        masked_y_coordinates, masked_x_coordinates = masked_vertices[:, 1], masked_vertices[:, 0]
+        masked_y_coordinates, masked_x_coordinates = (
+            masked_vertices[:, 1],
+            masked_vertices[:, 0],
+        )
 
         # linear interpolation of unregular data
-        self.x_int = np.linspace(masked_x_coordinates.min(), masked_x_coordinates.max(), num=interpolation_value,
-                                 endpoint=True)
+        self.x_int = np.linspace(
+            masked_x_coordinates.min(),
+            masked_x_coordinates.max(),
+            num=interpolation_value,
+            endpoint=True,
+        )
         interpolate = interp1d(masked_x_coordinates, masked_y_coordinates)
         self.y_int = interpolate(self.x_int)
 
         x_int = self.x_int
         y_int = self.y_int
 
+        # calculate kinking angle between the coordinate points. prepend forces a division by zero warning
+        np.seterr(divide="ignore", invalid="ignore")
 
-        #calculate kinking angle between the coordinate points. prepend forces a division by zero warning
-        np.seterr(divide='ignore', invalid='ignore')
+        kinking_angle_contour = np.degrees(
+            np.arctan(
+                np.diff(y_int, prepend=y_int[0]) / np.diff(x_int, prepend=x_int[0])
+            )
+        )
+        kinking_angle_raw = np.degrees(
+            np.arctan(
+                np.diff(y_coordinates, prepend=y_coordinates[0])
+                / np.diff(x_coordinates, prepend=x_coordinates[0])
+            )
+        )
 
-        kinking_angle_contour =np.degrees(np.arctan(np.diff(y_int, prepend=y_int[0]) /
-                                          np.diff(x_int, prepend=x_int[0])))
-        kinking_angle_raw = np.degrees(np.arctan(np.diff(y_coordinates, prepend=y_coordinates[0]) /
-                                       np.diff(x_coordinates, prepend=x_coordinates[0])))
-
-        z_slice_to_xy_plane[self.z_coordinate_slice] = {'X_Coordinates_Contour': x_int,
-                                                        'Y_Coordinates_Contour': y_int,
-                                                        'Kinking_Angle_Contour[°]': kinking_angle_contour,
-                                                        'X_Coordinates_Raw': x_coordinates_raw,
-                                                        'Y_Coordinates_Raw': y_coordinates_raw,
-                                                        'Kinking_Angle_Raw[°]': kinking_angle_raw}
+        z_slice_to_xy_plane[self.z_coordinate_slice] = {
+            "X_Coordinates_Contour": x_int,
+            "Y_Coordinates_Contour": y_int,
+            "Kinking_Angle_Contour[°]": kinking_angle_contour,
+            "X_Coordinates_Raw": x_coordinates_raw,
+            "Y_Coordinates_Raw": y_coordinates_raw,
+            "Kinking_Angle_Raw[°]": kinking_angle_raw,
+        }
 
         self.sliced_contour_xy = z_slice_to_xy_plane
 
-
-
         return z_slice_to_xy_plane
 
-
-
-
     def linear_fit_piecewise(self, number_of_segments: int = 3):
-
         """Fitting continuous piecewise linear functions to given fractured surface contour .
 
         Parameters
@@ -362,14 +396,18 @@ class Data_Processing:
         # find segment index of segment that is centered (z=t/2) and its corresponding central slope angle
 
         centerpoint = sum(z_int) / float(len(z_int))
-        central_segment_index = next(j for j, e in enumerate(breaks) if e >= centerpoint)
-        slope_angle_center = 180.0 * np.arctan(zy_pwlf.slopes[central_segment_index - 1]) / np.pi
+        central_segment_index = next(
+            j for j, e in enumerate(breaks) if e >= centerpoint
+        )
+        slope_angle_center = (
+            180.0 * np.arctan(zy_pwlf.slopes[central_segment_index - 1]) / np.pi
+        )
 
         # calculate coordinates, lenght and correlation coefficient of each linear segment and save in dict
 
         segment_dict = {}
 
-        lenseg_all=[]
+        lenseg_all = []
 
         for j, bp in enumerate(breaks[:-1]):
             dict_breaks = {}
@@ -387,13 +425,14 @@ class Data_Processing:
             lenseg_all.append(len_segment)
             width_segment = math.dist([pz_j], [pz_k])
 
-            percentage_of_t0 = (width_segment / (breaks[number_of_segments] - breaks[0])) * 100
+            percentage_of_t0 = (
+                width_segment / (breaks[number_of_segments] - breaks[0])
+            ) * 100
 
             slope_angle = 180.0 * np.arctan(zy_pwlf.slopes[j]) / np.pi
 
             mask = np.where((z_int < pz_k) & (z_int > pz_j))
             z_seg, y_seg = z_int[mask], y_int[mask]
-
 
             # if the breakpoints are too close and the interpolation value too low,
             # linear regression cannot be calculated as segment coordinates array is empty
@@ -406,30 +445,42 @@ class Data_Processing:
 
             angle_difference = abs(slope_angle) - abs(slope_angle_center)
 
-            dict_breaks[j + 1] = {'Breakpoint_Z': (pz_j, pz_k),
-                                  'Breakpoint_Y': (py_j, py_k),
-                                  'Segment_Lenght': len_segment,
-                                  'Segment_Width': width_segment,
-                                  'Segment_Width_Percentage': percentage_of_t0,
-                                  'Slope_Angle': slope_angle, 'R_Squared': r_squared,
-                                  'Angle_Difference_Central': angle_difference,
-                                  'Z_Coordinates_Fit': z_lin, 'Y_Coordinates_Fit': y_lin}
+            dict_breaks[j + 1] = {
+                "Breakpoint_Z": (pz_j, pz_k),
+                "Breakpoint_Y": (py_j, py_k),
+                "Segment_Lenght": len_segment,
+                "Segment_Width": width_segment,
+                "Segment_Width_Percentage": percentage_of_t0,
+                "Slope_Angle": slope_angle,
+                "R_Squared": r_squared,
+                "Angle_Difference_Central": angle_difference,
+                "Z_Coordinates_Fit": z_lin,
+                "Y_Coordinates_Fit": y_lin,
+            }
             segment_dict.update(dict_breaks)
 
-        dict_pwlf[x_coordinate] = {'Breakpoints': breaks}
-        dict_pwlf[x_coordinate].update({'Total_Width': breaks[number_of_segments] - breaks[0],
-                                        'Total_Lenght': sum(lenseg_all),
-                                        'Centerpoint': centerpoint,
-                                        'Central_Slope_Angle': slope_angle_center})
-        dict_pwlf[x_coordinate].update({'Segment_Index': segment_dict})
+        dict_pwlf[x_coordinate] = {"Breakpoints": breaks}
+        dict_pwlf[x_coordinate].update(
+            {
+                "Total_Width": breaks[number_of_segments] - breaks[0],
+                "Total_Lenght": sum(lenseg_all),
+                "Centerpoint": centerpoint,
+                "Central_Slope_Angle": slope_angle_center,
+            }
+        )
+        dict_pwlf[x_coordinate].update({"Segment_Index": segment_dict})
 
         self.pwlf_results = dict_pwlf
 
         return dict_pwlf
 
-    def shearlip_condition(self, segment_percentage_min: float, segment_percentage_max: float,
-                           corr_coeff_min: float, angle_difference_central_min: float):
-
+    def shearlip_condition(
+        self,
+        segment_percentage_min: float,
+        segment_percentage_max: float,
+        corr_coeff_min: float,
+        angle_difference_central_min: float,
+    ):
         """Analysis of the occurence of shearlips based on predefined criteria .
         See also:  https://doi.org/10.1111/j.1460-2695.2004.00837.x for further definition.
 
@@ -491,7 +542,7 @@ class Data_Processing:
         shearlip_dict = {}
         shearlip_dict[x_coordinate] = {}
 
-        shearlip_to_category = {'Undefined': 0, 'No Shearlip': 1, 'Shearlip': 2}
+        shearlip_to_category = {"Undefined": 0, "No Shearlip": 1, "Shearlip": 2}
 
         shearlip_list = []
         shearlip_categorical_list = []
@@ -500,87 +551,145 @@ class Data_Processing:
 
         # setting the condition for case distinction
 
-        for segment in [item for item in pwlf_dict[x_coordinate]['Segment_Index'].keys()]:
+        for segment in [
+            item for item in pwlf_dict[x_coordinate]["Segment_Index"].keys()
+        ]:
 
             if segment == 2:
 
-                shearlip_mode = 'No Shearlip'
+                shearlip_mode = "No Shearlip"
                 shearlip_list.append(shearlip_mode)
-                segment_percentage.append(pwlf_dict[x_coordinate]['Segment_Index'][segment]['Segment_Width_Percentage'])
-                segment_width.append(pwlf_dict[x_coordinate]['Segment_Index'][segment]['Segment_Width'])
-                shearlip_categorical_list.append(shearlip_to_category.get(str(shearlip_mode)))
+                segment_percentage.append(
+                    pwlf_dict[x_coordinate]["Segment_Index"][segment][
+                        "Segment_Width_Percentage"
+                    ]
+                )
+                segment_width.append(
+                    pwlf_dict[x_coordinate]["Segment_Index"][segment]["Segment_Width"]
+                )
+                shearlip_categorical_list.append(
+                    shearlip_to_category.get(str(shearlip_mode))
+                )
 
             else:
                 conditions_shearlips = [
-                    (pwlf_dict[x_coordinate]['Segment_Index'][segment]['R_Squared'] < corr_coeff_min),
-                    (segment_percentage_min > pwlf_dict[x_coordinate]['Segment_Index'][segment][
-                        'Segment_Width_Percentage'])
-                    | (pwlf_dict[x_coordinate]['Segment_Index'][segment][
-                           'Segment_Width_Percentage'] > segment_percentage_max),
-                    (pwlf_dict[x_coordinate]['Segment_Index'][segment][
-                         'Angle_Difference_Central'] > angle_difference_central_min),
-
+                    (
+                        pwlf_dict[x_coordinate]["Segment_Index"][segment]["R_Squared"]
+                        < corr_coeff_min
+                    ),
+                    (
+                        segment_percentage_min
+                        > pwlf_dict[x_coordinate]["Segment_Index"][segment][
+                            "Segment_Width_Percentage"
+                        ]
+                    )
+                    | (
+                        pwlf_dict[x_coordinate]["Segment_Index"][segment][
+                            "Segment_Width_Percentage"
+                        ]
+                        > segment_percentage_max
+                    ),
+                    (
+                        pwlf_dict[x_coordinate]["Segment_Index"][segment][
+                            "Angle_Difference_Central"
+                        ]
+                        > angle_difference_central_min
+                    ),
                 ]
 
-                choices_shearlips = ['Undefined', 'No Shearlip', 'Shearlip']
-                shearlip_mode = np.select(conditions_shearlips, choices_shearlips, default='No Shearlip')
+                choices_shearlips = ["Undefined", "No Shearlip", "Shearlip"]
+                shearlip_mode = np.select(
+                    conditions_shearlips, choices_shearlips, default="No Shearlip"
+                )
                 shearlip_list.append(shearlip_mode)
-                shearlip_categorical_list.append(shearlip_to_category.get(str(shearlip_mode)))
-                segment_percentage.append(pwlf_dict[x_coordinate]['Segment_Index'][segment]['Segment_Width_Percentage'])
-                segment_width.append(pwlf_dict[x_coordinate]['Segment_Index'][segment]['Segment_Width'])
+                shearlip_categorical_list.append(
+                    shearlip_to_category.get(str(shearlip_mode))
+                )
+                segment_percentage.append(
+                    pwlf_dict[x_coordinate]["Segment_Index"][segment][
+                        "Segment_Width_Percentage"
+                    ]
+                )
+                segment_width.append(
+                    pwlf_dict[x_coordinate]["Segment_Index"][segment]["Segment_Width"]
+                )
 
-        shearlip_dict[x_coordinate] = {'Shearlip_Classification': tuple(shearlip_list),
-                                       'Shearlip_Classification_Category': tuple(shearlip_categorical_list),
-                                       'Segment_Width': tuple(segment_width),
-                                       'Segment_Width_Percentage': tuple(segment_percentage)}
+        shearlip_dict[x_coordinate] = {
+            "Shearlip_Classification": tuple(shearlip_list),
+            "Shearlip_Classification_Category": tuple(shearlip_categorical_list),
+            "Segment_Width": tuple(segment_width),
+            "Segment_Width_Percentage": tuple(segment_percentage),
+        }
 
         for item in choices_shearlips:
-            indices = [i for i, val in enumerate(shearlip_dict[x_coordinate]['Shearlip_Classification']) if val == item]
+            indices = [
+                i
+                for i, val in enumerate(
+                    shearlip_dict[x_coordinate]["Shearlip_Classification"]
+                )
+                if val == item
+            ]
 
-            total_width_percentage = sum([shearlip_dict[x_coordinate]['Segment_Width_Percentage'][i] for i in indices])
-            total_width = sum([shearlip_dict[x_coordinate]['Segment_Width'][i] for i in indices])
+            total_width_percentage = sum(
+                [
+                    shearlip_dict[x_coordinate]["Segment_Width_Percentage"][i]
+                    for i in indices
+                ]
+            )
+            total_width = sum(
+                [shearlip_dict[x_coordinate]["Segment_Width"][i] for i in indices]
+            )
 
-            shearlip_dict[x_coordinate].update({item: {'Sum_Segment_Width': total_width,
-                                                       'Sum_Segment_Percentage': total_width_percentage}})
+            shearlip_dict[x_coordinate].update(
+                {
+                    item: {
+                        "Sum_Segment_Width": total_width,
+                        "Sum_Segment_Percentage": total_width_percentage,
+                    }
+                }
+            )
 
         self.shearlips_results = shearlip_dict
 
         return shearlip_dict
 
-    def modi_condition(self, undefined_percentage_max: float, shearlip_percentage_max: float,
-                       reference_angle_max: float,
-                       reference_angle_min: float):
-
+    def modi_condition(
+        self,
+        undefined_percentage_max: float,
+        shearlip_percentage_max: float,
+        reference_angle_max: float,
+        reference_angle_min: float,
+    ):
         """Analysis of fracture mode based on predefined criteria .
 
-                Parameters
-                ----------
-                undefined_percentage_max : float
-                        allowed total percentage of sum of segments being classified as 'undefined' relative
-                        to the total specimen width in percent
-                shearlip_percentage_max : float
-                        allowed total percentage of sum of segments being classified as 'shearlip' relative
-                        to the total specimen width in percent
-                reference_angle_max : float
-                        allowed central reference angle mainly for classifying slant and flat mode in degree
-                reference_angle_min : float
-                        allowed central reference angle mainly for classifying slant and flat mode in degree
+        Parameters
+        ----------
+        undefined_percentage_max : float
+                allowed total percentage of sum of segments being classified as 'undefined' relative
+                to the total specimen width in percent
+        shearlip_percentage_max : float
+                allowed total percentage of sum of segments being classified as 'shearlip' relative
+                to the total specimen width in percent
+        reference_angle_max : float
+                allowed central reference angle mainly for classifying slant and flat mode in degree
+        reference_angle_min : float
+                allowed central reference angle mainly for classifying slant and flat mode in degree
 
 
-                Returns :
-                ----------
-                modi_dict : dict
-                        dictionary for each sliced x coordinate containing information about the fracture mode
-                        This includes:
+        Returns :
+        ----------
+        modi_dict : dict
+                dictionary for each sliced x coordinate containing information about the fracture mode
+                This includes:
 
-                        'Fracture_Mode_Classification' : str
-                            Fracture mode
-                        'Fracture_Mode_Classification_Category' : int
-                            Fracture mode as categorical value
-                            0 = Flat
-                            1 = Slant
-                            2 = V-Mode
-                            3 = Undefined or Transition
+                'Fracture_Mode_Classification' : str
+                    Fracture mode
+                'Fracture_Mode_Classification_Category' : int
+                    Fracture mode as categorical value
+                    0 = Flat
+                    1 = Slant
+                    2 = V-Mode
+                    3 = Undefined or Transition
 
         """
 
@@ -595,37 +704,80 @@ class Data_Processing:
         pwlf_dict = self.pwlf_results
         shearlip_dict = self.shearlips_results
 
-        mode_to_category = {'Undefined': 3, 'Flat': 0, 'V-Mode': 2, 'Slant': 1, 'Transition': 3}
+        mode_to_category = {
+            "Undefined": 3,
+            "Flat": 0,
+            "V-Mode": 2,
+            "Slant": 1,
+            "Transition": 3,
+        }
 
         # for v-mode, shearlips have to be at both sides of the specimen - count_of_shearlips = 2
 
-        count_of_shearlips = shearlip_dict[x_coordinate]['Shearlip_Classification'].count('Shearlip')
+        count_of_shearlips = shearlip_dict[x_coordinate][
+            "Shearlip_Classification"
+        ].count("Shearlip")
 
-        sum_undefined_percentage = shearlip_dict[x_coordinate]['Undefined']['Sum_Segment_Percentage']
-        sum_shearlip_percentage = shearlip_dict[x_coordinate]['Shearlip']['Sum_Segment_Percentage']
+        sum_undefined_percentage = shearlip_dict[x_coordinate]["Undefined"][
+            "Sum_Segment_Percentage"
+        ]
+        sum_shearlip_percentage = shearlip_dict[x_coordinate]["Shearlip"][
+            "Sum_Segment_Percentage"
+        ]
 
         # setting the condition for case distinction
 
-        conditions_modi = [((sum_undefined_percentage >= undefined_percentage_max) & (
-                abs(pwlf_dict[x_coordinate]['Central_Slope_Angle']) > reference_angle_min)),
-                           ((sum_shearlip_percentage <= shearlip_percentage_max) & (
-                                   abs(pwlf_dict[x_coordinate]['Central_Slope_Angle']) > reference_angle_min)),
-                           ((sum_shearlip_percentage >= shearlip_percentage_max) & (
-                                   abs(pwlf_dict[x_coordinate]['Central_Slope_Angle']) > reference_angle_min)),
-                           ((sum_shearlip_percentage <= shearlip_percentage_max) & (
-                                   abs(pwlf_dict[x_coordinate]['Central_Slope_Angle']) < reference_angle_min)),
-                           ((count_of_shearlips == 2) & (sum_shearlip_percentage >= shearlip_percentage_max) & (
-                                   abs(pwlf_dict[x_coordinate]['Central_Slope_Angle']) < reference_angle_max)),
-                           ]
+        conditions_modi = [
+            (
+                (sum_undefined_percentage >= undefined_percentage_max)
+                & (
+                    abs(pwlf_dict[x_coordinate]["Central_Slope_Angle"])
+                    > reference_angle_min
+                )
+            ),
+            (
+                (sum_shearlip_percentage <= shearlip_percentage_max)
+                & (
+                    abs(pwlf_dict[x_coordinate]["Central_Slope_Angle"])
+                    > reference_angle_min
+                )
+            ),
+            (
+                (sum_shearlip_percentage >= shearlip_percentage_max)
+                & (
+                    abs(pwlf_dict[x_coordinate]["Central_Slope_Angle"])
+                    > reference_angle_min
+                )
+            ),
+            (
+                (sum_shearlip_percentage <= shearlip_percentage_max)
+                & (
+                    abs(pwlf_dict[x_coordinate]["Central_Slope_Angle"])
+                    < reference_angle_min
+                )
+            ),
+            (
+                (count_of_shearlips == 2)
+                & (sum_shearlip_percentage >= shearlip_percentage_max)
+                & (
+                    abs(pwlf_dict[x_coordinate]["Central_Slope_Angle"])
+                    < reference_angle_max
+                )
+            ),
+        ]
 
-        choices_modi = ['Undefined', 'Slant', 'Transition', 'Flat', 'V-Mode']
-        fracture_mode = np.select(conditions_modi, choices_modi, default='Transition')
+        choices_modi = ["Undefined", "Slant", "Transition", "Flat", "V-Mode"]
+        fracture_mode = np.select(conditions_modi, choices_modi, default="Transition")
         fracture_mode_category = mode_to_category.get(str(fracture_mode))
-        modi_dict[x_coordinate] = {'Fracture_Mode_Classification': str(fracture_mode),
-                                   'Fracture_Mode_Classification_Category': fracture_mode_category}
+        modi_dict[x_coordinate] = {
+            "Fracture_Mode_Classification": str(fracture_mode),
+            "Fracture_Mode_Classification_Category": fracture_mode_category,
+        }
 
         self.modi_results = modi_dict
 
-        print(f'Analyzed {self.specimen_name}_{self.side} coordinate x={x_coordinate} mm')
+        print(
+            f"Analyzed {self.specimen_name}_{self.side} coordinate x={x_coordinate} mm"
+        )
 
         return modi_dict
